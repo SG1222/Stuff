@@ -205,7 +205,8 @@ def add_record():
     category = choose_category()
     record_date = get_date("Enter date")
     quantity = get_positive_number("Enter quantity in " + category[2] + ": ")
-    note = input("Enter a note (optional): ").strip()
+    # Only the first 100 characters are kept because the note column is VARCHAR(100)
+    note = input("Enter a note (optional): ").strip()[:100]
 
     # The emission factor comes from the categories table in MySQL
     co2 = calculate_emission(quantity, category[3])
@@ -324,20 +325,22 @@ def update_record():
     print("\nCurrent details:")
     print_records([record])
 
-    # Read the current category ID and quantity of this record
-    cursor.execute("SELECT category_id, quantity FROM emission_records WHERE record_id = %s",
+    # The category ID is not part of RECORD_QUERY, so read it separately
+    cursor.execute("SELECT category_id FROM emission_records WHERE record_id = %s",
                    (record_id,))
-    category_id, quantity = cursor.fetchone()
+    category_id = cursor.fetchone()[0]
+    quantity = record[3]
     new_date = str(record[1])
     new_note = record[6]
 
     print("\nPress Enter to keep the current value.")
     date_text = input("New date (YYYY-MM-DD): ").strip()
     if date_text != "":
-        if validate_date(date_text) is None:
+        valid_date = validate_date(date_text)
+        if valid_date is None:
             print("Invalid date, keeping the old date.")
         else:
-            new_date = validate_date(date_text)
+            new_date = valid_date
 
     if ask_yes_no("Change the category?"):
         category_id = choose_category()[0]
@@ -352,7 +355,7 @@ def update_record():
         except ValueError:
             print("Not a number, keeping the old quantity.")
 
-    note_text = input("New note: ").strip()
+    note_text = input("New note: ").strip()[:100]
     if note_text != "":
         new_note = note_text
 
@@ -402,6 +405,14 @@ def get_category_totals():
     return cursor.fetchall()
 
 
+# Add up the total CO2 of all categories
+def get_grand_total(category_totals):
+    grand_total = 0
+    for row in category_totals:
+        grand_total = grand_total + float(row[2])
+    return grand_total
+
+
 def overall_summary():
     print_heading("CARBON FOOTPRINT SUMMARY")
     count, total, average, lowest, highest = get_overall_totals()
@@ -425,11 +436,9 @@ def category_summary():
     if len(rows) == 0:
         print("No records available yet.")
         return
-    grand_total = 0
+    grand_total = get_grand_total(rows)
     print("{:<18}{:>10}{:>16}{:>12}".format("CATEGORY", "RECORDS", "TOTAL CO2", "SHARE"))
     print("-" * 56)
-    for row in rows:
-        grand_total = grand_total + float(row[2])
     for row in rows:
         share = float(row[2]) / grand_total * 100 if grand_total > 0 else 0
         print("{:<18}{:>10}{:>16.2f}{:>11.1f}%".format(row[0], row[1], row[2], share))
@@ -484,9 +493,7 @@ def monthly_summary():
 # Return a list of suggestion strings based on the recorded categories
 def generate_suggestions(category_totals):
     suggestions = []
-    grand_total = 0
-    for row in category_totals:
-        grand_total = grand_total + float(row[2])
+    grand_total = get_grand_total(category_totals)
     for row in category_totals:
         name = row[0]
         share = float(row[2]) / grand_total * 100 if grand_total > 0 else 0
@@ -528,7 +535,7 @@ def export_to_csv():
         print("No records to export.")
         return
     try:
-        with open(CSV_FILE, "w", newline="") as file:
+        with open(CSV_FILE, "w", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
             writer.writerow(["Record ID", "Date", "Category", "Quantity", "Unit",
                              "CO2 (kg)", "Note"])
@@ -548,7 +555,7 @@ def export_summary_to_text():
     category_rows = get_category_totals()
     file = None
     try:
-        file = open(SUMMARY_FILE, "w")
+        file = open(SUMMARY_FILE, "w", encoding="utf-8")
         file.write("CARBON DATA LOGGER\n")
         file.write("PERSONAL FOOTPRINT SUMMARY\n")
         file.write("Generated on: " + str(datetime.date.today()) + "\n\n")
@@ -588,10 +595,13 @@ def update_emission_factor():
 
 
 def add_category():
-    name = input("Enter new category name: ").strip().title()
+    name = input("Enter new category name: ").strip()
     unit = input("Enter unit (e.g. kWh, km, kg): ").strip()
     if name == "" or unit == "":
         print("Name and unit cannot be empty.")
+        return
+    if len(name) > 30 or len(unit) > 10:
+        print("Name can have at most 30 characters and unit at most 10.")
         return
     factor = get_positive_number("Enter emission factor (kg CO2 per " + unit + "): ")
     try:
@@ -695,6 +705,8 @@ def main():
                     pause_program()
             else:
                 print("Invalid choice! Please enter a number from 0 to 13.")
+    except KeyboardInterrupt:
+        print("\nProgram stopped by the user.")
     finally:
         # Always close the cursor and connection when the program ends
         cursor.close()
