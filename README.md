@@ -406,6 +406,50 @@ Three special cases:
 
 > **Note:** `undo_stack` is a global variable, but the functions do not use the keyword `global` for it. They change the list with `append()` and `pop()`. They do not give the name a new value. `global` is necessary only when a function gives a global name a new value, as in `connect_database()` (see 10.1).
 
+### 10.20 Connector calls: `commit()`, `rowcount` and `lastrowid`
+
+The program uses these calls of `mysql.connector`:
+
+| Call | What it does | Where |
+|---|---|---|
+| `mysql.connector.connect(...)` | Opens a connection to the MySQL server. | `connect_database()` |
+| `connection.cursor()` | Makes the cursor that runs the queries. | `connect_database()` |
+| `cursor.execute(query, values)` | Sends one query to MySQL. The values go in place of the `%s` placeholders. | all database functions |
+| `connection.commit()` | Saves the changes of `INSERT`, `UPDATE` and `DELETE` permanently. | after each change |
+| `cursor.fetchone()` | Gives the next row as a tuple, or `None`. | single-row queries |
+| `cursor.fetchall()` | Gives all rows as a list of tuples. | tables and summaries |
+| `cursor.rowcount` | Gives the number of rows that the last query changed. | `delete_record()` |
+| `cursor.lastrowid` | Gives the `AUTO_INCREMENT` ID of the row that the last `INSERT` made. | `add_record()` |
+
+Without `commit()`, MySQL does not keep the changes after the program stops. A `SELECT` does not change data. Thus a `SELECT` does not need `commit()`.
+
+`add_record()` uses `cursor.lastrowid` two times:
+1. It shows the new ID to the user: "Record saved successfully with ID 11".
+2. It pushes the new ID onto the undo stack (see 10.19).
+
+> **Note:** The CBSE syllabus lists `connect()`, `cursor()`, `execute()`, `commit()`, `fetchone()`, `fetchall()` and `rowcount`. It does not list `lastrowid`. `lastrowid` is a cursor attribute of the same type as `rowcount`. A different method that uses only syllabus items is `SELECT MAX(record_id) FROM emission_records` and then `fetchone()`. The program uses `lastrowid` because it is the standard method and it is shorter.
+
+### 10.21 The expression `x if condition else y`
+
+The code uses this short form of `if`/`else` three times. Examples:
+
+```python
+note = record[6] if record[6] else ""
+share = float(row[2]) / grand_total * 100 if grand_total > 0 else 0
+```
+
+Python calculates the condition first. If the condition is true, the result is the value before `if`. If the condition is false, the result is the value after `else`.
+The first line changes an empty note (`None`) to an empty string, so that `print` shows nothing.
+The second line stops a division by zero.
+The long form of the second line is:
+
+```python
+if grand_total > 0:
+    share = float(row[2]) / grand_total * 100
+else:
+    share = 0
+```
+
 ---
 
 ## 11. SQL concepts in the program
