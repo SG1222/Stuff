@@ -3,9 +3,6 @@
 A personal carbon footprint tracker for the terminal.
 It is my CBSE Class XII Computer Science project in Python and MySQL.
 
-This README uses the rules of Simplified Technical English (ASD-STE100).
-Sentences are short. Each step has one instruction. Each concept has one name.
-
 ---
 
 ## 1. Technical terms
