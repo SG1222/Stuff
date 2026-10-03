@@ -71,13 +71,13 @@ def create_tables():
                         category_id INT AUTO_INCREMENT PRIMARY KEY,
                         category_name VARCHAR(30) NOT NULL UNIQUE,
                         unit VARCHAR(10) NOT NULL,
-                        emission_factor DECIMAL(10,3) NOT NULL)""")
+                        emission_factor FLOAT NOT NULL)""")
     cursor.execute("""CREATE TABLE IF NOT EXISTS emission_records (
                         record_id INT AUTO_INCREMENT PRIMARY KEY,
                         record_date DATE NOT NULL,
                         category_id INT NOT NULL,
-                        quantity DECIMAL(10,2) NOT NULL,
-                        co2_emission DECIMAL(10,2) NOT NULL,
+                        quantity FLOAT NOT NULL,
+                        co2_emission FLOAT NOT NULL,
                         note VARCHAR(100),
                         FOREIGN KEY (category_id) REFERENCES categories(category_id))""")
     connection.commit()
