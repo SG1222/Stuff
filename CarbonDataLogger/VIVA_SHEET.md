@@ -162,37 +162,76 @@ The `note` column is `VARCHAR(100)`. Slicing keeps the first 100 characters, so 
 
 ---
 
-## 5. File handling
+## 5. Stack (Undo Last Added Record)
 
-**Q39. How do you export to CSV?**
+**Q39. Where did you use a stack?**
+In menu option 14, Undo Last Added Record. The list `undo_stack` stores the ID of every record added in this session. Option 14 removes the most recently added record first.
+
+**Q40. What is a stack? Why is it the right choice for undo?**
+A stack is a LIFO (Last In, First Out) structure: the last item put in is the first one taken out. Undo must always remove the newest action first, then the one before it, which is exactly LIFO.
+
+**Q41. How did you implement the stack?**
+With a Python list and two functions:
+```python
+def push(stack, item):
+    stack.append(item)          # add to the top
+
+def pop(stack):
+    if len(stack) == 0:         # empty stack (underflow)
+        return None
+    return stack.pop()          # remove and return the top
+```
+`add_record()` calls `push(undo_stack, cursor.lastrowid)` after saving. `undo_last_record()` calls `pop(undo_stack)`.
+
+**Q42. What happens if the stack is empty?**
+`pop()` checks `len(stack) == 0` and returns `None`, so the program shows "Nothing to undo" instead of crashing. Calling `list.pop()` on an empty list would raise an `IndexError`. This situation is called stack underflow.
+
+**Q43. What if the user says N at the confirmation?**
+The ID is pushed back onto the stack, so the record can still be undone later.
+
+**Q44. What if the record was already deleted with option 5?**
+`get_record()` returns `None`, so the program shows "Record … was already deleted" and nothing else happens.
+
+**Q45. Why is `global` not needed for `undo_stack`?**
+The functions only change the list's contents with `append()` and `pop()`; they never assign a new value to the name `undo_stack`. `global` is needed only when a function assigns to a global name, as `connect_database()` does with `connection` and `cursor`.
+
+**Q46. Does undo work after restarting the program?**
+No. The stack is an ordinary list in memory, so it starts empty each time the program runs. Undo is meant for mistakes made in the current session; older records can still be removed with option 5, Delete Record.
+
+---
+
+## 6. File handling
+
+**Q47. How do you export to CSV?**
 `export_to_csv()` opens `carbon_records.csv` in write mode with a `with` statement, creates a `csv.writer`, writes the headings with `writerow()`, and writes all records at once with `writerows()`.
 
-**Q40. Why `newline=""` when opening the CSV file?**
+**Q48. Why `newline=""` when opening the CSV file?**
 Without it, Windows adds an extra blank line between rows in the CSV file.
 
-**Q41. Why `encoding="utf-8"`?**
+**Q49. Why `encoding="utf-8"`?**
 So symbols like ₹ and Hindi text in notes can be written to the file. Otherwise Windows may raise an error.
 
-**Q42. Difference between the two export functions?**
+**Q50. Difference between the two export functions?**
 `export_to_csv()` uses the `csv` module and a `with` clause, which closes the file automatically. `export_summary_to_text()` uses normal text-file handling with `open()`, `write()` and `close()` inside `try`/`finally`. Together they show both ways of working with files.
 
-**Q43. What does mode `"w"` do?**
+**Q51. What does mode `"w"` do?**
 It creates the file, or empties it if it already exists, before writing. So each export replaces the old file with fresh data.
 
 ---
 
-## 6. Suggestions and limitations
+## 7. Suggestions and limitations
 
-**Q44. How are suggestions generated?**
+**Q52. How are suggestions generated?**
 They are rule-based. `generate_suggestions()` works out each category's share of the total CO2. If a category is 20% or more of the total, it shows the fixed tip for that category from the `SUGGESTIONS` dictionary. No AI or internet is used.
 
-**Q45. What are the limitations of your project?**
+**Q53. What are the limitations of your project?**
 - Emission factors are illustrative, not official.
 - It is for a single user and has no login.
 - It runs in the terminal only, with no graphical interface.
 - Changing a factor does not recalculate old records (this is deliberate).
+- Undo works only for records added in the current session.
 
-**Q46. How could the project be improved?**
+**Q54. How could the project be improved?**
 Add charts of monthly emissions, set monthly targets, support several users, use official factors from a government source, or build a graphical interface.
 
 ---
@@ -204,4 +243,5 @@ Add charts of monthly emissions, set monthly targets, support several users, use
 4. Menu 4: update the quantity and show that CO2 is recalculated.
 5. Menus 6, 7 and 9: show the summaries (aggregates, GROUP BY, suggestions).
 6. Menus 10 and 11: export, then open the CSV and text files.
-7. Type letters as a quantity and an impossible date to show the error handling.
+7. Menu 14: undo the record added in step 2, which shows the stack in action.
+8. Type letters as a quantity and an impossible date to show the error handling.

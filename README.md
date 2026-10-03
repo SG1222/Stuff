@@ -22,6 +22,7 @@ This document uses these terms with one meaning only.
 | **CO2 value** | The estimated kilograms of CO2 for one record. |
 | **cursor** | The Python object that sends SQL queries to MySQL and holds the results. |
 | **placeholder** | The text `%s` in a query. The connector puts a value in its place. |
+| **stack** | A list where the last item put in is the first item taken out (LIFO: Last In, First Out). |
 | **tuple index** | The position of a value in a row, for example `category[3]`. Positions start at 0. |
 
 ---
@@ -127,6 +128,7 @@ The modules `csv` and `datetime` are part of Python. You do not install them.
 | 11 | Export Summary to Text File | Writes a summary to `carbon_summary.txt`. | `export_summary_to_text()` |
 | 12 | Manage/View Emission Factors | Opens a sub-menu. You can view the factors, change a factor, or add a category. | `manage_emission_factors()` |
 | 13 | Help | Shows short instructions. | `show_help()` |
+| 14 | Undo Last Added Record | Removes the newest record that you added in this session, after you type Y. Each use goes one record further back. | `undo_last_record()` |
 | 0 | Exit | Closes the database connection. Stops the program. | in `main()` |
 
 ---
@@ -386,6 +388,27 @@ The two functions show the two methods of file handling in the syllabus.
 `MONTH_NAMES` is a tuple of 12 names. Index 0 is "January".
 Month numbers start at 1. Thus the code uses `MONTH_NAMES[month - 1]`.
 
+### 10.19 Undo with a stack
+
+The list `undo_stack` is a stack. It holds the IDs of the records that the user added in this session.
+Two functions operate the stack:
+- `push(stack, item)` puts an item on the top. It uses `append()`.
+- `pop(stack)` removes the top item and returns it. If the stack is empty, it returns `None`.
+
+The flow:
+1. `add_record()` saves a record. Then it pushes the new ID: `push(undo_stack, cursor.lastrowid)`.
+2. `undo_last_record()` pops the top ID. This is always the newest record (LIFO).
+3. The function shows the record and asks for confirmation.
+4. If the user types Y, the function deletes the record.
+5. If the user types N, the function pushes the ID back. Thus the user can undo it later.
+
+Three special cases:
+- The stack is empty. The function shows "Nothing to undo".
+- The user deleted the record before with option 5. `get_record()` returns `None`. The function shows "was already deleted".
+- The program stops. The stack is a normal Python list in memory. Thus it is empty when the program starts again. Undo works only for records from the current session.
+
+> **Note:** `undo_stack` is a global variable, but the functions do not use the keyword `global` for it. They change the list with `append()` and `pop()`. They do not give the name a new value. `global` is necessary only when a function gives a global name a new value, as in `connect_database()` (see 10.1).
+
 ---
 
 ## 11. SQL concepts in the program
@@ -397,7 +420,7 @@ Month numbers start at 1. Thus the code uses `MONTH_NAMES[month - 1]`.
 | INSERT | `insert_default_categories()`, `add_record()`, `add_category()` |
 | SELECT with WHERE | `get_record()`, `get_category()`, the search functions |
 | UPDATE | `update_record()`, `update_emission_factor()` |
-| DELETE | `delete_record()` |
+| DELETE | `delete_record()`, `undo_last_record()` |
 | BETWEEN | `search_by_date_range()` |
 | LIKE | `search_by_category()` |
 | DISTINCT | `show_available_months()` |
@@ -426,5 +449,6 @@ Month numbers start at 1. Thus the code uses `MONTH_NAMES[month - 1]`.
 - The program is for one user. It has no login.
 - The program uses the terminal only. It has no graphical interface.
 - A changed emission factor does not change old records (see 10.11).
+- Undo (option 14) works only for records added since the program started (see 10.19).
 - If you type `nan` or `inf` as a quantity, the program shows a database error. It does not stop.
 - The CSV file shows numbers as Python writes them, for example `10.0` and `1.7`.

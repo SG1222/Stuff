@@ -53,6 +53,9 @@ RECORD_QUERY = ("SELECT r.record_id, r.record_date, c.category_name, r.quantity,
 connection = None
 cursor = None
 
+# Stack of record IDs added in this session, used by "Undo Last Added Record"
+undo_stack = []
+
 
 # ---------------- Database setup ----------------
 
@@ -220,6 +223,8 @@ def add_record():
         cursor.execute(query, values)
         connection.commit()
         print("Record saved successfully with ID", cursor.lastrowid)
+        # Remember the new record so that it can be undone later
+        push(undo_stack, cursor.lastrowid)
     else:
         print("Record not saved.")
 
@@ -385,6 +390,42 @@ def delete_record():
         print(cursor.rowcount, "record deleted.")
     else:
         print("Delete cancelled.")
+
+
+# ---------------- Undo using a stack ----------------
+
+# Add an item to the top of the stack
+def push(stack, item):
+    stack.append(item)
+
+
+# Remove and return the top item of the stack, or None if it is empty
+def pop(stack):
+    if len(stack) == 0:
+        return None
+    return stack.pop()
+
+
+# Remove the most recently added record (Last In, First Out)
+def undo_last_record():
+    print_heading("UNDO LAST ADDED RECORD")
+    record_id = pop(undo_stack)
+    if record_id is None:
+        print("Nothing to undo. No records have been added in this session.")
+        return
+    record = get_record(record_id)
+    if record is None:
+        print("Record", record_id, "was already deleted.")
+        return
+    print_records([record])
+    if ask_yes_no("Remove this record?"):
+        cursor.execute("DELETE FROM emission_records WHERE record_id = %s", (record_id,))
+        connection.commit()
+        print("Record removed.", len(undo_stack), "more record(s) can be undone.")
+    else:
+        # Put the ID back so the user can undo it later
+        push(undo_stack, record_id)
+        print("Undo cancelled.")
 
 
 # ---------------- Summaries ----------------
@@ -646,6 +687,7 @@ def show_help():
     print("* Summaries show totals overall, per category and per month.")
     print("* Exports create", CSV_FILE, "and", SUMMARY_FILE, "in this folder.")
     print("* Emission factors are illustrative and can be changed from option 12.")
+    print("* Option 14 removes records added in this session, newest first.")
 
 
 def display_main_menu():
@@ -665,6 +707,7 @@ def display_main_menu():
     print("11. Export Summary to Text File")
     print("12. Manage/View Emission Factors")
     print("13. Help")
+    print("14. Undo Last Added Record")
     print("0. Exit")
 
 
@@ -685,7 +728,7 @@ def main():
         "4": update_record, "5": delete_record, "6": overall_summary,
         "7": category_summary, "8": monthly_summary, "9": highest_emission_category,
         "10": export_to_csv, "11": export_summary_to_text,
-        "12": manage_emission_factors, "13": show_help,
+        "12": manage_emission_factors, "13": show_help, "14": undo_last_record,
     }
 
     try:
@@ -704,7 +747,7 @@ def main():
                 if choice not in ("3", "12"):
                     pause_program()
             else:
-                print("Invalid choice! Please enter a number from 0 to 13.")
+                print("Invalid choice! Please enter a number from 0 to 14.")
     except KeyboardInterrupt:
         print("\nProgram stopped by the user.")
     finally:
