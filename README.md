@@ -448,4 +448,3 @@ Three special cases:
 - A changed emission factor does not change old records (see 10.11).
 - Undo (option 14) works only for records added since the program started (see 10.19).
 - If you type `nan` or `inf` as a quantity, the program shows a database error. It does not stop.
-- The CSV file shows numbers as Python writes them, for example `10.0` and `1.7`.
