@@ -44,12 +44,14 @@ The user can search, update, delete, summarise and export the records.
 
 ## 3. Project files
 
+All project files are in the folder `CarbonDataLogger/`.
+
 | File | Purpose |
 |---|---|
-| `carbon_logger.py` | The program. It contains all the Python code. |
-| `database_setup.sql` | An SQL script. It makes the database, the two tables, the default categories and five sample records. |
-| `VIVA_SHEET.md` | Questions and answers for the viva. |
-| `Project_Report.docx` | The CBSE project report. It has the certificate, design, source code, screenshots, tests and bibliography. |
+| [`carbon_logger.py`](CarbonDataLogger/carbon_logger.py) | The program. It contains all the Python code. |
+| [`database_setup.sql`](CarbonDataLogger/database_setup.sql) | An SQL script. It makes the database, the two tables, the default categories and five sample records. |
+| [`VIVA_SHEET.md`](CarbonDataLogger/VIVA_SHEET.md) | Questions and answers for the viva. |
+| [`Project_Report.docx`](CarbonDataLogger/Project_Report.docx) | The CBSE project report. It has the certificate, design, source code, screenshots, tests and bibliography. |
 | `carbon_records.csv` | The CSV export. Menu option 10 makes this file. |
 | `carbon_summary.txt` | The text summary. Menu option 11 makes this file. |
 
@@ -81,7 +83,7 @@ The modules `csv` and `datetime` are part of Python. You do not install them.
 
 > **Caution:** Run the SQL script one time only. A second run stops with a "Duplicate entry" error, because the category names must be unique.
 
-1. Open the MySQL client in the project folder.
+1. Open the MySQL client in the folder `CarbonDataLogger`.
 2. Type this command:
    ```sql
    SOURCE database_setup.sql;
@@ -98,7 +100,7 @@ The modules `csv` and `datetime` are part of Python. You do not install them.
 
 ## 6. Run the program
 
-1. Open a terminal in the project folder.
+1. Open a terminal in the folder `CarbonDataLogger`.
 2. Type:
    ```
    python carbon_logger.py
