@@ -50,6 +50,7 @@ The user can search, update, delete, summarise and export the records.
 | `database_setup.sql` | An SQL script. It makes the database, the two tables, the default categories and five sample records. |
 | `VIVA_SHEET.md` | Questions and answers for the viva. |
 | `Project_Report.docx` | The CBSE project report. It has the certificate, design, source code, screenshots, tests and bibliography. |
+| `Project_Report.pdf` | The same report as a PDF, ready to print or share. |
 | `carbon_records.csv` | The CSV export. Menu option 10 makes this file. |
 | `carbon_summary.txt` | The text summary. Menu option 11 makes this file. |
 
