@@ -492,3 +492,6 @@ else:
 - A changed emission factor does not change old records (see 10.11).
 - Undo (option 14) works only for records added since the program started (see 10.19).
 - If you type `nan` or `inf` as a quantity, the program shows a database error. It does not stop.
+
+  Please note, this is just a small project, data produced may be inaccurate.
+  
