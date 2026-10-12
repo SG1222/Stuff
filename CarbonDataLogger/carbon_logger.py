@@ -64,7 +64,8 @@ def connect_database():
     global connection, cursor
     connection = mysql.connector.connect(host=DB_HOST, user=DB_USER, password=DB_PASSWORD)
     cursor = connection.cursor()
-    cursor.execute("CREATE DATABASE IF NOT EXISTS " + DB_NAME)
+    # utf8mb4 lets notes contain symbols such as the rupee sign and Hindi text
+    cursor.execute("CREATE DATABASE IF NOT EXISTS " + DB_NAME + " CHARACTER SET utf8mb4")
     cursor.execute("USE " + DB_NAME)
 
 
@@ -126,20 +127,23 @@ def get_positive_number(prompt):
         try:
             value = float(input(prompt))
             if value <= 0:
-                print("Quantity must be greater than zero.")
+                print("The value must be greater than zero.")
             else:
                 return value
         except ValueError:
             print("Invalid input! Please enter a numeric value.")
 
 
-# Return the date as 'YYYY-MM-DD' if it is valid, otherwise None
+# Return the date as 'YYYY-MM-DD' if it is valid, otherwise None.
+# Only dates from the year 2000 up to today are accepted.
 def validate_date(date_text):
     try:
-        date_value = datetime.datetime.strptime(date_text, "%Y-%m-%d")
-        return date_value.strftime("%Y-%m-%d")
+        date_value = datetime.datetime.strptime(date_text, "%Y-%m-%d").date()
     except ValueError:
         return None
+    if date_value.year < 2000 or date_value > datetime.date.today():
+        return None
+    return str(date_value)
 
 
 # Ask for a date; an empty answer means today's date
@@ -150,7 +154,7 @@ def get_date(prompt):
             return str(datetime.date.today())
         valid_date = validate_date(date_text)
         if valid_date is None:
-            print("Invalid date! Example of a correct date: 2026-08-15")
+            print("Invalid date! Use YYYY-MM-DD, from the year 2000 up to today.")
         else:
             return valid_date
 
@@ -682,7 +686,7 @@ def show_help():
     print_heading("HELP")
     print("* Add a record for an activity, e.g. 15 kWh of electricity or 20 km by car.")
     print("* CO2 is estimated as: quantity x emission factor of the category.")
-    print("* Dates are entered as YYYY-MM-DD. Press Enter to use today's date.")
+    print("* Dates are entered as YYYY-MM-DD, from 2000 up to today. Press Enter for today.")
     print("* Use Search, Update and Delete with the record ID shown in the tables.")
     print("* Summaries show totals overall, per category and per month.")
     print("* Exports create", CSV_FILE, "and", SUMMARY_FILE, "in this folder.")
@@ -748,7 +752,7 @@ def main():
                     pause_program()
             else:
                 print("Invalid choice! Please enter a number from 0 to 14.")
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print("\nProgram stopped by the user.")
     finally:
         # Always close the cursor and connection when the program ends

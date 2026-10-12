@@ -91,11 +91,14 @@ DML (works with data): `INSERT`, `SELECT`, `UPDATE`, `DELETE`.
 **Q22. What does `IF NOT EXISTS` do?**
 It creates the database or table only if it isn't already there. That's why the program can be run many times without errors.
 
+**Q23. Why is the database created with `CHARACTER SET utf8mb4`?**
+A character set decides which characters MySQL can store. Older servers such as MySQL 5.7 default to `latin1`, which only holds English letters, so a note like "₹500 बिजली bill" is rejected with "Incorrect string value" and the record is not saved. `utf8mb4` can store text in any language, and both tables inherit it from the database. Because of `IF NOT EXISTS`, an old `latin1` database is not changed automatically; it has to be dropped and created again.
+
 ---
 
 ## 3. Python–MySQL connectivity
 
-**Q23. What are the steps to connect Python to MySQL?**
+**Q24. What are the steps to connect Python to MySQL?**
 1. `import mysql.connector`
 2. `connection = mysql.connector.connect(host=..., user=..., password=...)`
 3. `cursor = connection.cursor()`
@@ -104,88 +107,96 @@ It creates the database or table only if it isn't already there. That's why the 
 6. `cursor.fetchone()` / `cursor.fetchall()` after SELECT
 7. `cursor.close()` and `connection.close()` at the end (done in `main()`'s `finally`)
 
-**Q24. What is a cursor?**
+**Q25. What is a cursor?**
 An object that sends SQL queries to MySQL and holds the results so Python can read them.
 
-**Q25. What does `commit()` do? What happens without it?**
+**Q26. What does `commit()` do? What happens without it?**
 It permanently saves the changes made by INSERT, UPDATE or DELETE. Without `commit()` the changes are lost when the program closes. SELECT doesn't need `commit()` because it doesn't change data.
 
-**Q26. Difference between `fetchone()` and `fetchall()`?**
+**Q27. Difference between `fetchone()` and `fetchall()`?**
 `fetchone()` returns one row as a tuple, or `None` if there is no row. It is used where only one row is expected, such as `get_record()` and `get_category()`. `fetchall()` returns all rows as a list of tuples and is used for tables and summaries.
 
-**Q27. Why `%s` instead of joining strings to build the query?**
+**Q28. Why `%s` instead of joining strings to build the query?**
 With `%s`, the connector inserts the values safely. Anything the user types is treated only as data, never as part of the SQL command. This prevents **SQL injection** (a user typing SQL code that changes the query) and also handles quotes in text such as `Mom's car` correctly.
 ```python
 cursor.execute("DELETE FROM emission_records WHERE record_id = %s", (record_id,))
 ```
 
-**Q28. But `connect_database()` joins strings: `"USE " + DB_NAME`. Why?**
+**Q29. But `connect_database()` joins strings: `"USE " + DB_NAME`. Why?**
 `%s` works only for values, not for names of databases or tables. `DB_NAME` is a fixed constant written in the program, not user input, so joining strings is safe there.
 
-**Q29. Why is there a comma in `(record_id,)`?**
+**Q30. Why is there a comma in `(record_id,)`?**
 `execute()` needs a tuple of values. `(record_id)` is just a number in brackets; the comma makes it a one-item tuple.
 
-**Q30. What are `rowcount` and `lastrowid`?**
+**Q31. What are `rowcount` and `lastrowid`?**
 `cursor.rowcount` is the number of rows changed by the last query, shown after a delete. `cursor.lastrowid` is the ID given to the last inserted row, shown after adding a record.
 
-**Q31. `lastrowid` is not in the CBSE syllabus list. Why did you use it?**
+**Q32. `lastrowid` is not in the CBSE syllabus list. Why did you use it?**
 The syllabus lists `connect()`, `cursor()`, `execute()`, `commit()`, `fetchone()`, `fetchall()` and `rowcount`. `lastrowid` is a cursor attribute of the same kind as `rowcount`: `rowcount` tells how many rows changed, and `lastrowid` tells the ID of the row just inserted. I need that ID to show it to the user and to push it onto the undo stack. Using only listed features, the same ID could be found with `SELECT MAX(record_id) FROM emission_records` and `fetchone()`, but `lastrowid` is the standard, shorter way.
 
-**Q32. Why does the monthly summary use `cursor.fetchall()[0]` instead of `fetchone()`?**
+**Q33. Why does the monthly summary use `cursor.fetchall()[0]` instead of `fetchone()`?**
 That query uses `GROUP BY` and can return several rows, one per category. If `fetchone()` reads only the first row, the other rows stay unread, and the next `execute()` can fail with the error "Unread result found". `fetchall()` reads every row, and `[0]` takes the first one, which is the highest category because of `ORDER BY ... DESC`.
 
-**Q33. Why do the summary functions check for zero records first?**
+**Q34. Why do the summary functions check for zero records first?**
 On an empty table `COUNT(*)` gives 0, but `SUM()`, `AVG()`, `MIN()` and `MAX()` give NULL, which Python receives as `None`. Formatting `None` with `"{:.2f}"` raises an error. So each summary checks `if count == 0` (or `if len(rows) == 0`) and shows "No records available yet." before formatting anything.
 
 ---
 
 ## 4. Python concepts
 
-**Q34. Why did you use so many functions?**
+**Q35. Why did you use so many functions?**
 Each function does one job, such as `add_record()`, `search_by_date()` or `export_to_csv()`. This makes the program easier to read, test and explain, and avoids repeating code. For example, `print_records()` is reused by viewing, searching, updating and deleting.
 
-**Q35. Why is the `global` keyword used in `connect_database()`?**
+**Q36. Why is the `global` keyword used in `connect_database()`?**
 `connection` and `cursor` are created inside the function, but every other function needs them. `global` makes the function change the variables at the top of the file instead of creating new local ones.
 
-**Q36. How does the main menu work?**
+**Q37. How does the main menu work?**
 `main()` runs a `while True` loop that shows the menu and reads a choice. The dictionary `menu_actions` links each choice ("1", "2", ...) to its function. Choosing "0" uses `break` to leave the loop.
 
-**Q37. Where did you use `try`/`except`/`finally`?**
+**Q38. Where did you use `try`/`except`/`finally`?**
 - `get_integer()` and `get_positive_number()`: catch `ValueError` when the user types letters
 - `validate_date()`: catches `ValueError` for impossible dates such as 2026-13-45
-- `main()`: catches `mysql.connector.Error` (wrong password, server not running), and `KeyboardInterrupt` (Ctrl+C); its `finally` always closes the cursor and connection
+- `main()`: catches `mysql.connector.Error` (wrong password, server not running), and `KeyboardInterrupt` (Ctrl+C) together with `EOFError` (Ctrl+D on macOS/Linux, or Ctrl+Z then Enter on Windows, which end the input); its `finally` always closes the cursor and connection
 - `add_category()`: catches `IntegrityError` for a duplicate category name
 - `export_summary_to_text()`: catches `IOError`; its `finally` always closes the file
 
-**Q38. What is the purpose of `finally`?**
+**Q39. What is `EOFError`, and why do you catch it?**
+`input()` raises `EOFError` when the input ends, for example when the user presses Ctrl+D on macOS/Linux or Ctrl+Z then Enter on Windows. Without catching it the program would stop with a long error message. `main()` catches it together with `KeyboardInterrupt`, prints "Program stopped by the user." and still closes the connection in `finally`.
+
+**Q40. What is the purpose of `finally`?**
 Code in `finally` runs whether or not an error happened. It is used to close files and the database connection, so they are never left open.
 
-**Q39. How do you check that a date is valid?**
-`validate_date()` uses `datetime.datetime.strptime(date_text, "%Y-%m-%d")`. If the date doesn't exist (for example, February 30), Python raises `ValueError`, and the function returns `None`.
+**Q41. How do you check that a date is valid?**
+`validate_date()` makes three checks and returns `None` if any one fails:
+1. `datetime.datetime.strptime(date_text, "%Y-%m-%d").date()` must succeed. An impossible date such as February 30 raises `ValueError`.
+2. The year must be 2000 or later. This catches typing mistakes such as `0026` or `1926`.
+3. The date must not be after `datetime.date.today()`, because an activity cannot happen in the future.
 
-**Q40. How do you stop negative or text quantities?**
-`get_positive_number()` keeps asking in a `while True` loop. `float()` raises `ValueError` for text, and an `if` rejects values that are 0 or less.
+If all three pass, it returns `str(date_value)`, which is always in `YYYY-MM-DD` form. Adding, updating and searching all use this function, so the same rules apply everywhere.
 
-**Q41. Why is the note cut with `[:100]`?**
+**Q42. How do you stop negative or text quantities?**
+`get_positive_number()` keeps asking in a `while True` loop. `float()` raises `ValueError` for text, and an `if` rejects values that are 0 or less with "The value must be greater than zero." The message says "value" because the same function also reads emission factors in menu 12.
+
+**Q43. Why is the note cut with `[:100]`?**
 The `note` column is `VARCHAR(100)`. Slicing keeps the first 100 characters, so MySQL never rejects a long note and the record is not lost.
 
-**Q42. What does `x if condition else y` mean in your code?**
+**Q44. What does `x if condition else y` mean in your code?**
 It is a short form of `if`/`else` that gives one of two values. For example, `share = float(row[2]) / grand_total * 100 if grand_total > 0 else 0` calculates the percentage only when the total is above zero, which avoids a division by zero. `note = record[6] if record[6] else ""` shows an empty note as blank instead of `None`.
 
-**Q43. Why do you write `MONTH_NAMES[month - 1]`?**
+**Q45. Why do you write `MONTH_NAMES[month - 1]`?**
 `MONTH_NAMES` is a tuple of 12 names, and tuple indexes start at 0, so "January" is at index 0. Month numbers start at 1, so month `m` is at index `m - 1`. For example, month 9 gives `MONTH_NAMES[8]`, which is "September".
 
 ---
 
 ## 5. Stack (Undo Last Added Record)
 
-**Q44. Where did you use a stack?**
+**Q46. Where did you use a stack?**
 In menu option 14, Undo Last Added Record. The list `undo_stack` stores the ID of every record added in this session. Option 14 removes the most recently added record first.
 
-**Q45. What is a stack? Why is it the right choice for undo?**
+**Q47. What is a stack? Why is it the right choice for undo?**
 A stack is a LIFO (Last In, First Out) structure: the last item put in is the first one taken out. Undo must always remove the newest action first, then the one before it, which is exactly LIFO.
 
-**Q46. How did you implement the stack?**
+**Q48. How did you implement the stack?**
 With a Python list and two functions:
 ```python
 def push(stack, item):
@@ -198,48 +209,48 @@ def pop(stack):
 ```
 `add_record()` calls `push(undo_stack, cursor.lastrowid)` after saving. `undo_last_record()` calls `pop(undo_stack)`.
 
-**Q47. What happens if the stack is empty?**
+**Q49. What happens if the stack is empty?**
 `pop()` checks `len(stack) == 0` and returns `None`, so the program shows "Nothing to undo" instead of crashing. Calling `list.pop()` on an empty list would raise an `IndexError`. This situation is called stack underflow.
 
-**Q48. What if the user says N at the confirmation?**
+**Q50. What if the user says N at the confirmation?**
 The ID is pushed back onto the stack, so the record can still be undone later.
 
-**Q49. What if the record was already deleted with option 5?**
+**Q51. What if the record was already deleted with option 5?**
 `get_record()` returns `None`, so the program shows "Record … was already deleted" and nothing else happens.
 
-**Q50. Why is `global` not needed for `undo_stack`?**
+**Q52. Why is `global` not needed for `undo_stack`?**
 The functions only change the list's contents with `append()` and `pop()`; they never assign a new value to the name `undo_stack`. `global` is needed only when a function assigns to a global name, as `connect_database()` does with `connection` and `cursor`.
 
-**Q51. Does undo work after restarting the program?**
+**Q53. Does undo work after restarting the program?**
 No. The stack is an ordinary list in memory, so it starts empty each time the program runs. Undo is meant for mistakes made in the current session; older records can still be removed with option 5, Delete Record.
 
 ---
 
 ## 6. File handling
 
-**Q52. How do you export to CSV?**
+**Q54. How do you export to CSV?**
 `export_to_csv()` opens `carbon_records.csv` in write mode with a `with` statement, creates a `csv.writer`, writes the headings with `writerow()`, and writes all records at once with `writerows()`.
 
-**Q53. Why `newline=""` when opening the CSV file?**
+**Q55. Why `newline=""` when opening the CSV file?**
 Without it, Windows adds an extra blank line between rows in the CSV file.
 
-**Q54. Why `encoding="utf-8"`?**
+**Q56. Why `encoding="utf-8"`?**
 So symbols like ₹ and Hindi text in notes can be written to the file. Otherwise Windows may raise an error.
 
-**Q55. Difference between the two export functions?**
+**Q57. Difference between the two export functions?**
 `export_to_csv()` uses the `csv` module and a `with` clause, which closes the file automatically. `export_summary_to_text()` uses normal text-file handling with `open()`, `write()` and `close()` inside `try`/`finally`. Together they show both ways of working with files.
 
-**Q56. What does mode `"w"` do?**
+**Q58. What does mode `"w"` do?**
 It creates the file, or empties it if it already exists, before writing. So each export replaces the old file with fresh data.
 
 ---
 
 ## 7. Suggestions and limitations
 
-**Q57. How are suggestions generated?**
+**Q59. How are suggestions generated?**
 They are rule-based. `generate_suggestions()` works out each category's share of the total CO2. If a category is 20% or more of the total, it shows the fixed tip for that category from the `SUGGESTIONS` dictionary. No AI or internet is used.
 
-**Q58. What are the limitations of your project?**
+**Q60. What are the limitations of your project?**
 - Emission factors are illustrative, not official.
 - It is for a single user and has no login.
 - It runs in the terminal only, with no graphical interface.
@@ -247,7 +258,7 @@ They are rule-based. `generate_suggestions()` works out each category's share of
 - Undo works only for records added in the current session.
 - Typing `nan` or `inf` as a quantity is accepted by `float()`, and MySQL then rejects it with a database error. The program shows the error and returns to the menu; it does not crash.
 
-**Q59. How could the project be improved?**
+**Q61. How could the project be improved?**
 Add charts of monthly emissions, set monthly targets, support several users, use official factors from a government source, or build a graphical interface.
 
 ---

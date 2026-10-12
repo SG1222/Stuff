@@ -5,7 +5,8 @@
 -- (carbon_logger.py also creates these automatically if missing.)
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS carbon_logger;
+-- utf8mb4 lets notes contain symbols such as the rupee sign and Hindi text
+CREATE DATABASE IF NOT EXISTS carbon_logger CHARACTER SET utf8mb4;
 USE carbon_logger;
 
 -- Table 1: activity categories with their unit and emission factor

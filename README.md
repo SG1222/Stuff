@@ -240,9 +240,10 @@ The comma in `(record_id,)` makes a tuple with one item.
 
 ### 10.4 Why `"USE " + DB_NAME` joins strings
 
-`connect_database()` uses `"CREATE DATABASE IF NOT EXISTS " + DB_NAME` and `"USE " + DB_NAME`.
+`connect_database()` uses `"CREATE DATABASE IF NOT EXISTS " + DB_NAME + " CHARACTER SET utf8mb4"` and `"USE " + DB_NAME`.
 A placeholder can hold a value. It cannot hold the name of a database or table.
 `DB_NAME` is a constant in the code. The user does not type it. Thus the join is safe.
+Section 10.22 explains `CHARACTER SET utf8mb4`.
 
 ### 10.5 Tuple indexes in rows
 
@@ -280,10 +281,14 @@ Thus each summary function checks for zero records first. It uses `if count == 0
 
 ### 10.8 Dates
 
-`validate_date()` uses `datetime.datetime.strptime(text, "%Y-%m-%d")`.
-If the date does not exist, for example `2026-02-30`, Python raises `ValueError`. The function then returns `None`.
+`validate_date()` does three checks:
+1. `datetime.datetime.strptime(text, "%Y-%m-%d").date()` reads the text as a date. If the date does not exist, for example `2026-02-30`, Python raises `ValueError`. The function then returns `None`.
+2. If the year is before 2000, the function returns `None`. This stops typing errors such as `0026-09-15` or `1926-09-15`.
+3. If the date is after today, the function returns `None`. A person cannot do an activity in the future.
 
-The function then uses `strftime("%Y-%m-%d")` to write the date again. This step adds missing zeros: `2026-9-5` becomes `2026-09-05`.
+If the date passes all three checks, the function returns `str(date_value)`. This always gives the form `YYYY-MM-DD` with zeros: `2026-9-5` becomes `2026-09-05`.
+
+`get_date()` and the search functions use `validate_date()`. Thus the same rules apply when you add, update or search.
 
 The zeros are important in `search_by_date_range()`. That function compares two dates as strings: `if start_date > end_date`.
 String comparison is correct only when all dates have the same length and the same order (year, month, day).
@@ -351,15 +356,15 @@ Options 3 and 12 open a sub-menu. Each sub-menu pauses after each action. Thus `
 
 1. **Startup:** `try` / `except mysql.connector.Error`. If the connection fails, the program shows the cause and stops.
 2. **Each menu action:** `try` / `except mysql.connector.Error`. A database error shows a message. The program then shows the menu again. It does not stop.
-3. **The full loop:** `try` / `except KeyboardInterrupt` / `finally`. Ctrl+C shows "Program stopped by the user." The `finally` block always closes the cursor and the connection.
+3. **The full loop:** `try` / `except (KeyboardInterrupt, EOFError)` / `finally`. Ctrl+C gives `KeyboardInterrupt`. Ctrl+D (macOS, Linux) or Ctrl+Z and then Enter (Windows) ends the input and gives `EOFError`. Both show "Program stopped by the user." The `finally` block always closes the cursor and the connection.
 
 ### 10.16 Input checks
 
 | Function | What it stops |
 |---|---|
 | `get_integer()` | Text where a whole number is necessary. It catches `ValueError` and asks again. |
-| `get_positive_number()` | Text, zero and negative numbers. It asks again. |
-| `get_date()` | Dates that do not exist, or have the wrong format. It asks again. |
+| `get_positive_number()` | Text, zero and negative numbers. It shows "The value must be greater than zero." and asks again. It is used for quantities and for emission factors. |
+| `get_date()` | Dates that do not exist, dates in the wrong format, dates before the year 2000 and dates after today. It asks again. |
 | `choose_category()` | A category ID that does not exist. It asks again. |
 | `add_record()`, `update_record()` | A note longer than 100 characters. `[:100]` keeps the first 100 characters, because the column is VARCHAR(100). |
 | `add_category()` | An empty name or unit. A name longer than 30 characters. A unit longer than 10 characters. |
@@ -450,13 +455,29 @@ else:
     share = 0
 ```
 
+### 10.22 The character set `utf8mb4`
+
+A character set tells MySQL how to keep text. Some older MySQL servers, for example MySQL 5.7, use the character set `latin1` by default.
+`latin1` can keep English letters only. It cannot keep the rupee sign (₹) or Hindi text.
+If the database uses `latin1`, MySQL rejects such a note with the error "Incorrect string value". The record is not saved.
+
+Thus the program and the SQL script make the database with `CHARACTER SET utf8mb4`:
+
+```sql
+CREATE DATABASE IF NOT EXISTS carbon_logger CHARACTER SET utf8mb4;
+```
+
+`utf8mb4` can keep the text of all languages. The two tables use the character set of the database.
+
+> **Caution:** `CREATE DATABASE IF NOT EXISTS` does not change a database that exists. If you made the database with an older version of this project, type `DROP DATABASE carbon_logger;` in the MySQL client. Then start the program again, or run the SQL script again.
+
 ---
 
 ## 11. SQL concepts in the program
 
 | Concept | Where |
 |---|---|
-| CREATE DATABASE, CREATE TABLE | `connect_database()`, `create_tables()`, `database_setup.sql` |
+| CREATE DATABASE (with CHARACTER SET utf8mb4), CREATE TABLE | `connect_database()`, `create_tables()`, `database_setup.sql` |
 | PRIMARY KEY, FOREIGN KEY, NOT NULL, UNIQUE | `create_tables()` |
 | INSERT | `insert_default_categories()`, `add_record()`, `add_category()` |
 | SELECT with WHERE | `get_record()`, `get_category()`, the search functions |
@@ -480,6 +501,8 @@ else:
 | "Could not connect to MySQL: ... Access denied" | The password is wrong. | Change `DB_PASSWORD` in `carbon_logger.py`. |
 | "Could not connect to MySQL: ... Can't connect" | The MySQL server is not running. | Start the MySQL server. |
 | "Duplicate entry" when you run the SQL script | The database already has the categories. | Type `DROP DATABASE carbon_logger;`. Then run the script again. |
+| "Database error: ... Incorrect string value" when you save a note with ₹ or Hindi text | The database uses an old character set (`latin1`). | Type `DROP DATABASE carbon_logger;`. Then start the program again, or run the SQL script again (see 10.22). |
+| "Invalid date!" for a date that looks correct | The date is before the year 2000 or after today. | Type a date from 2000 up to today, or push Enter for today. |
 | "Error: could not write to carbon_records.csv" | Another program, for example Excel, has the file open. | Close the file in the other program. Then export again. |
 
 ---
