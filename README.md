@@ -50,6 +50,7 @@ All project files are in the folder `CarbonDataLogger/`.
 | [`database_setup.sql`](CarbonDataLogger/database_setup.sql) | An SQL script. It makes the database, the two tables, the default categories and five sample records. |
 | [`VIVA_SHEET.md`](CarbonDataLogger/VIVA_SHEET.md) | Questions and answers for the viva. |
 | [`Project_Report.docx`](CarbonDataLogger/Project_Report.docx) | The CBSE project report. It has the certificate, design, source code, screenshots, tests and bibliography. |
+| [`Carbon_Data_Logger_Handbook.pdf`](CarbonDataLogger/Carbon_Data_Logger_Handbook.pdf) | A handbook: the project brief, how to run the project, a record of the development session, the test results and the full source code. |
 | `carbon_records.csv` | The CSV export. Menu option 10 makes this file. |
 | `carbon_summary.txt` | The text summary. Menu option 11 makes this file. |
 
