@@ -517,5 +517,4 @@ CREATE DATABASE IF NOT EXISTS carbon_logger CHARACTER SET utf8mb4;
 - Undo (option 14) works only for records added since the program started (see 10.19).
 - If you type `nan` or `inf` as a quantity, the program shows a database error. It does not stop.
 
-  Please note, this is just a small project, data produced may be inaccurate.
-  
+Please note, this is just a small project, data produced may be inaccurate.
