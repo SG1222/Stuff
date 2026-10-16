@@ -5,22 +5,9 @@ It is my CBSE Class XII Computer Science project in Python and MySQL.
 
 ---
 
-## 1. Technical terms
+## 1. Positive Affirmation
 
-This document uses these terms with one meaning only.
-
-| Term | Meaning |
-|---|---|
-| **program** | The file `carbon_logger.py`. |
-| **database** | The MySQL database `carbon_logger`. |
-| **record** | One row in the table `emission_records`. A record is one activity on one date. |
-| **category** | One row in the table `categories`, for example "Car Travel". |
-| **emission factor** | The kilograms of CO2 for one unit of a category, for example 0.17 kg for 1 km by car. |
-| **CO2 value** | The estimated kilograms of CO2 for one record. |
-| **cursor** | The Python object that sends SQL queries to MySQL and holds the results. |
-| **placeholder** | The text `%s` in a query. The connector puts a value in its place. |
-| **stack** | A list where the last item put in is the first item taken out (LIFO: Last In, First Out). |
-| **tuple index** | The position of a value in a row, for example `category[3]`. Positions start at 0. |
+Have a good day!
 
 ---
 
